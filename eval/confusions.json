@@ -1,0 +1,77 @@
+[
+  {
+    "true": "Nebbiolo",
+    "predicted": "Sangiovese",
+    "count": 38
+  },
+  {
+    "true": "Tempranillo",
+    "predicted": "Cabernet Franc",
+    "count": 26
+  },
+  {
+    "true": "Malbec",
+    "predicted": "Cabernet Franc",
+    "count": 23
+  },
+  {
+    "true": "Pinot Grigio",
+    "predicted": "Viognier",
+    "count": 17
+  },
+  {
+    "true": "Tempranillo",
+    "predicted": "Tempranillo Blend",
+    "count": 15
+  },
+  {
+    "true": "Malbec",
+    "predicted": "Merlot",
+    "count": 11
+  },
+  {
+    "true": "Shiraz",
+    "predicted": "Cabernet Franc",
+    "count": 9
+  },
+  {
+    "true": "Tempranillo",
+    "predicted": "Merlot",
+    "count": 9
+  },
+  {
+    "true": "Malbec",
+    "predicted": "Ros\u00e9",
+    "count": 8
+  },
+  {
+    "true": "Tempranillo",
+    "predicted": "Ros\u00e9",
+    "count": 7
+  },
+  {
+    "true": "Shiraz",
+    "predicted": "Merlot",
+    "count": 5
+  },
+  {
+    "true": "Malbec",
+    "predicted": "Cabernet Sauvignon",
+    "count": 5
+  },
+  {
+    "true": "Tempranillo",
+    "predicted": "Sangiovese",
+    "count": 5
+  },
+  {
+    "true": "Tempranillo",
+    "predicted": "Pinot Noir",
+    "count": 5
+  },
+  {
+    "true": "Malbec",
+    "predicted": "Portuguese Red",
+    "count": 4
+  }
+]
