@@ -8,6 +8,7 @@ disclosed in the eval output, not hidden).
 from __future__ import annotations
 
 import json
+import random
 import re
 import subprocess
 import sys
@@ -37,6 +38,21 @@ def load_classes() -> list[str]:
 
 
 def load_test_set() -> list[dict]:
+    """Shuffled with a fixed seed (42) before any subsampling happens.
+
+    BUG FOUND (caught by the confusion-matrix figure -- it showed only 6 of
+    40 varieties instead of a broad spread): prep_classifier.py's
+    build_dataset() iterates `for variety, variety_rows in
+    per_variety_kept.items(): for row in variety_rows: ...` -- variety-
+    grouped. Dict insertion order is preserved through prep_dataset()'s
+    per-split writes, so test.jsonl is NOT randomly ordered; it's clustered
+    by variety. Taking the first MLX_SUBSAMPLE/CLAUDE_SUBSAMPLE rows
+    (unshuffled) therefore evaluated on a handful of varieties, not a
+    representative sample across the 40-class task -- which could have
+    meaningfully biased the reported accuracy either direction depending on
+    whether those particular varieties happen to be easy or hard. Fixed by
+    shuffling here, once, before any subsample is taken downstream.
+    """
     rows = []
     for line in TEST_PATH.read_text().splitlines():
         if not line.strip():
@@ -45,6 +61,7 @@ def load_test_set() -> list[dict]:
         prompt = rec["messages"][0]["content"]
         true_variety = rec["messages"][1]["content"].removeprefix("1. ").strip()
         rows.append({"prompt": prompt, "true_variety": true_variety})
+    random.Random(42).shuffle(rows)
     return rows
 
 
