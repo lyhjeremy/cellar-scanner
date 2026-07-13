@@ -1,77 +1,77 @@
 [
   {
-    "true": "Nebbiolo",
-    "predicted": "Sangiovese",
-    "count": 38
-  },
-  {
-    "true": "Tempranillo",
+    "true": "Cabernet Sauvignon",
     "predicted": "Cabernet Franc",
-    "count": 26
+    "count": 10
   },
   {
-    "true": "Malbec",
-    "predicted": "Cabernet Franc",
-    "count": 23
-  },
-  {
-    "true": "Pinot Grigio",
+    "true": "Pinot Gris",
     "predicted": "Viognier",
-    "count": 17
-  },
-  {
-    "true": "Tempranillo",
-    "predicted": "Tempranillo Blend",
-    "count": 15
-  },
-  {
-    "true": "Malbec",
-    "predicted": "Merlot",
-    "count": 11
-  },
-  {
-    "true": "Shiraz",
-    "predicted": "Cabernet Franc",
-    "count": 9
-  },
-  {
-    "true": "Tempranillo",
-    "predicted": "Merlot",
-    "count": 9
-  },
-  {
-    "true": "Malbec",
-    "predicted": "Ros\u00e9",
     "count": 8
   },
   {
-    "true": "Tempranillo",
-    "predicted": "Ros\u00e9",
-    "count": 7
+    "true": "Syrah",
+    "predicted": "Cabernet Franc",
+    "count": 6
   },
   {
-    "true": "Shiraz",
-    "predicted": "Merlot",
-    "count": 5
+    "true": "Nebbiolo",
+    "predicted": "Sangiovese",
+    "count": 6
   },
   {
-    "true": "Malbec",
-    "predicted": "Cabernet Sauvignon",
-    "count": 5
-  },
-  {
-    "true": "Tempranillo",
+    "true": "Red Blend",
     "predicted": "Sangiovese",
     "count": 5
   },
   {
-    "true": "Tempranillo",
-    "predicted": "Pinot Noir",
+    "true": "Chardonnay",
+    "predicted": "Viognier",
     "count": 5
+  },
+  {
+    "true": "Portuguese White",
+    "predicted": "Viognier",
+    "count": 5
+  },
+  {
+    "true": "Gr\u00fcner Veltliner",
+    "predicted": "Viognier",
+    "count": 5
+  },
+  {
+    "true": "Riesling",
+    "predicted": "Viognier",
+    "count": 5
+  },
+  {
+    "true": "Sauvignon Blanc",
+    "predicted": "Viognier",
+    "count": 5
+  },
+  {
+    "true": "Sparkling Blend",
+    "predicted": "Viognier",
+    "count": 3
+  },
+  {
+    "true": "Pinot Noir",
+    "predicted": "Cabernet Franc",
+    "count": 3
+  },
+  {
+    "true": "Bordeaux-style Red Blend",
+    "predicted": "Cabernet Franc",
+    "count": 3
+  },
+  {
+    "true": "Cabernet Sauvignon",
+    "predicted": "Sangiovese",
+    "count": 3
   },
   {
     "true": "Malbec",
     "predicted": "Portuguese Red",
-    "count": 4
+    "count": 3
   }
 ]

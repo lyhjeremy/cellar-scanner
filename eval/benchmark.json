@@ -3,27 +3,27 @@
     "system": "base",
     "n": 300,
     "top1_acc": 0.0867,
-    "top3_acc": 0.1367,
-    "macro_f1": 0.0155,
-    "mean_latency_s": 3.935,
+    "top3_acc": 0.1433,
+    "macro_f1": 0.0213,
+    "mean_latency_s": 4.287,
     "cost_per_1k_calls_usd": 0
   },
   {
     "system": "lora",
     "n": 300,
-    "top1_acc": 0.1967,
-    "top3_acc": 0.1967,
-    "macro_f1": 0.0849,
-    "mean_latency_s": 4.294,
+    "top1_acc": 0.2767,
+    "top3_acc": 0.2767,
+    "macro_f1": 0.2525,
+    "mean_latency_s": 10.577,
     "cost_per_1k_calls_usd": 0
   },
   {
     "system": "claude_teacher",
     "n": 200,
-    "top1_acc": 0.295,
-    "top3_acc": 0.37,
-    "macro_f1": 0.0452,
-    "mean_latency_s": 15.29,
+    "top1_acc": 0.23,
+    "top3_acc": 0.305,
+    "macro_f1": 0.1194,
+    "mean_latency_s": 69.617,
     "cost_per_1k_calls_usd": "Max subscription (no per-call API cost)"
   }
 ]
