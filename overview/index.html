@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Cellar Scanner — a 1.5B model on a laptop that out-guesses Claude at blind tasting</title>
+<meta name="description" content="Photograph a wine label, get a profile grounded in 30,000 real reviews. Plus a locally fine-tuned LoRA that identifies the grape from a blind tasting note at 27.7% Top-1, beating Claude's zero-shot 23.0%." />
+<meta name="theme-color" content="#FBF8F1" />
+<meta property="og:title" content="Cellar Scanner" />
+<meta property="og:description" content="A specialised 1.5B model, fine-tuned on a laptop, beats a frontier model on the one task it was trained for." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lyhjeremy.github.io/cellar-scanner/overview/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #FBF8F1;
+    --card: #FFFFFF;
+    --plate: #FFFFFF;
+    --ink: #1a1a2e;
+    --ink2: #3d3d55;
+    --muted: #6B7280;
+    --rule: #E5DCC7;
+    --accent: #7a1f2b;
+    --accent2: #B45309;
+    --link: #0E7490;
+    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    --sans: 'Source Sans 3', -apple-system, system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+    --shadow: 0 1px 2px rgba(26,26,46,.05), 0 10px 34px rgba(26,26,46,.07);
+    --spine:  92px;
+    --col:    min(100% - 2.6rem, 62rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #14141f;
+      --card: #1c1c2a;
+      --plate: #f7f4ec;
+      --ink: #F2EFE6;
+      --ink2: #C9C4B6;
+      --muted: #918B7D;
+      --rule: #33313f;
+      --accent: #E0899A;
+      --accent2: #E3BC5E;
+      --link: #22D3EE;
+      --shadow: 0 1px 2px rgba(0,0,0,.32), 0 10px 34px rgba(0,0,0,.4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--serif); font-size: clamp(17px, 0.55rem + 0.6vw, 19.5px);
+    line-height: 1.68; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--link); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  strong { font-weight: 700; color: var(--ink); }
+  code { font-family: var(--mono); font-size: .86em;
+         background: color-mix(in srgb, var(--ink) 7%, transparent);
+         padding: .12em .38em; border-radius: 4px; }
+  .wrap { width: var(--col); margin: 0 auto; }
+
+  .eyebrow { font-family: var(--mono); font-weight: 600; font-size: 11.5px;
+             letter-spacing: .17em; text-transform: uppercase; color: var(--muted);
+             margin: 0 0 14px; }
+
+  .masthead { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding: 30px 0 0; }
+  .logo { font-family: var(--sans); font-weight: 800; font-size: 21px;
+          letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: none; }
+  .tagline { font-size: 15px; color: var(--ink2); font-family: var(--sans); }
+
+  .hero { padding: 44px 0 54px; }
+  .kicker { font-family: var(--sans); font-size: clamp(18px, 2.1vw, 23px); font-weight: 600;
+            color: var(--muted); margin: 0 0 8px; letter-spacing: -.01em; }
+  .hero h1 { font-family: var(--sans); font-size: clamp(37px, 6vw, 72px); font-weight: 800;
+             letter-spacing: -.035em; line-height: 1.04; margin: 0; max-width: 17ch; }
+  .hero-sub { margin: 24px 0 0; font-size: 1.06em; color: var(--ink2); max-width: 60ch; }
+
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; align-items: center; }
+  .btn { display: inline-block; padding: 13px 26px; border-radius: 8px;
+         font-family: var(--sans); font-weight: 700; font-size: 16px;
+         text-decoration: none; border: 1px solid var(--ink); transition: transform .15s ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--ink); color: var(--paper); }
+  .textlink { font-family: var(--sans); font-size: 16px; font-weight: 600; color: var(--ink2);
+              text-decoration: underline; text-underline-offset: 4px;
+              text-decoration-thickness: 1px; }
+  .textlink:hover { color: var(--ink); }
+
+  .claims { display: grid; grid-template-columns: 1fr; gap: 0 52px; margin: 50px 0 0; }
+  @media (min-width: 760px) { .claims { grid-template-columns: 1fr 1fr; } }
+  .claim { padding: 18px 0 20px; border-top: 1px solid var(--rule); }
+  .claim:first-child, .claim:nth-child(2) { border-top: 2px solid var(--ink); }
+  @media (max-width: 759px) { .claim:nth-child(2) { border-top: 1px solid var(--rule); } }
+  .claim .n { font-family: var(--sans); font-weight: 800; font-size: 40px; line-height: 1.05;
+              color: var(--accent); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .claim h3 { margin: 0 0 6px; }
+  .claim p { margin: 9px 0 0; font-size: 15.5px; color: var(--ink2); line-height: 1.5;
+             font-family: var(--sans); }
+
+  .route { position: relative; padding-bottom: 30px; }
+  .route::before { content: ""; position: absolute; left: calc(var(--spine) / 2); top: 8px;
+                   bottom: 80px; width: 2px; background: var(--rule); }
+  .stop { position: relative; padding: 0 0 76px var(--spine); }
+  .stop::before { content: ""; position: absolute; left: calc(var(--spine) / 2 - 7px); top: 7px;
+                  width: 16px; height: 16px; border-radius: 50%;
+                  background: var(--paper); border: 2px solid var(--ink); box-sizing: border-box; }
+  .stop--key::before { background: var(--accent); border-color: var(--accent); }
+  .stop--warn::before { background: var(--accent2); border-color: var(--accent2); }
+  .stop--end::before { background: var(--ink); }
+
+  h2 { font-family: var(--sans); font-size: clamp(27px, 3.7vw, 38px); font-weight: 800;
+       letter-spacing: -.027em; line-height: 1.13; margin: 12px 0 16px; max-width: 19ch; }
+  h3 { font-family: var(--sans); font-size: 17px; font-weight: 700; margin: 0 0 7px;
+       letter-spacing: -.012em; }
+  .stop p { margin: 0 0 17px; max-width: 60ch; color: var(--ink2); }
+
+  .bignum { font-family: var(--sans); font-weight: 800; font-size: clamp(74px, 10vw, 128px);
+            line-height: .86; letter-spacing: -.05em; margin: 6px 0 4px; color: var(--accent);
+            font-variant-numeric: tabular-nums; }
+  .bignum-note { font-family: var(--sans); font-size: 16px; color: var(--muted); margin: 0 0 20px; }
+
+  /* A white-background chart would glow in dark mode; the plate makes it read
+     as a deliberately printed page instead. */
+  figure { margin: 28px 0 0; }
+  .plate { background: var(--plate); border: 1px solid var(--rule); border-radius: 10px;
+           padding: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .plate img { border-radius: 4px; }
+  .plate--flush { padding: 0; }
+  .shot { border-radius: 10px; border: 1px solid var(--rule); box-shadow: var(--shadow);
+          overflow: hidden; background: var(--card); }
+  /* min() so the cap never exceeds the column on a phone */
+  .shot--narrow { max-width: min(430px, 100%); }
+  figcaption { margin-top: 11px; font-family: var(--sans); font-size: 14.5px;
+               color: var(--muted); line-height: 1.5; }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+            gap: 22px; margin-top: 28px; }
+  .panels figure { margin: 0; }
+
+  .pull { margin: 30px 0 0; padding: 20px 25px; border-left: 3px solid var(--accent);
+          background: color-mix(in srgb, var(--accent) 7%, transparent);
+          border-radius: 0 8px 8px 0; }
+  .pull p { margin: 0 0 9px; color: var(--ink); max-width: none; }
+  .pull p:last-of-type { margin: 0; }
+  .pull .who { font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+               text-transform: uppercase; color: var(--muted); display: block; margin-top: 9px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+          gap: 1px; margin-top: 28px; background: var(--rule);
+          border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .cell { background: var(--paper); padding: 22px 20px; }
+  .cell p { font-size: 15px; margin: 0; color: var(--ink2); max-width: none;
+            line-height: 1.55; font-family: var(--sans); }
+
+  /* results tables: scroll inside their own box, never the page */
+  .tablewrap { margin-top: 26px; overflow-x: auto; border: 1px solid var(--rule);
+               border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 480px;
+          font-family: var(--sans); font-size: 15.5px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--rule); }
+  th { font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+       text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td { color: var(--ink2); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  .win td { color: var(--ink); font-weight: 700;
+            background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+  /* real terminal output, quoted verbatim */
+  .term { margin-top: 26px; background: #14141f; color: #e6e3da; border-radius: 10px;
+          padding: 18px 20px; overflow-x: auto; box-shadow: var(--shadow);
+          border: 1px solid #2a2a3a; }
+  .term pre { margin: 0; font-family: var(--mono); font-size: 13px; line-height: 1.62;
+              white-space: pre; }
+  .term .c { color: #9aa08f; }
+  .term .g { color: #7fd18f; }
+  .term .y { color: #E3BC5E; }
+
+  .specs { margin-top: 26px; border-top: 1px solid var(--rule); }
+  .spec { display: grid; grid-template-columns: 1fr; gap: 2px;
+          padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  @media (min-width: 700px) { .spec { grid-template-columns: 178px 1fr; gap: 24px; } }
+  .spec dt { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em;
+             text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+  .spec dd { margin: 0; font-size: 16px; color: var(--ink2); font-family: var(--sans); }
+
+  .close { padding: 6px 0 80px var(--spine); position: relative; }
+  .close h2 { max-width: 20ch; }
+  footer { border-top: 1px solid var(--rule); padding: 28px 0 60px;
+           font-family: var(--sans); font-size: 14.5px; color: var(--muted); }
+  footer a { color: var(--ink2); }
+  footer p { margin: 0 0 8px; }
+
+  @media (max-width: 640px) {
+    :root { --spine: 38px; }
+    .hero { padding: 36px 0 46px; }
+    .stop { padding-bottom: 58px; }
+    .plate { padding: 9px; }
+    .term { padding: 14px 14px; }
+    .term pre { font-size: 11.5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn { transition: none; }
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="logo"><span class="dot" aria-hidden="true"></span>Cellar Scanner</div>
+    <div class="tagline">label in, grounded profile out</div>
+  </header>
+
+  <section class="hero">
+    <p class="kicker">Ask a chatbot about a wine label and it will invent a producer.</p>
+    <h1>This one refuses instead.</h1>
+
+    <p class="hero-sub">
+      Photograph a bottle and Cellar Scanner reads the label for real, retrieves
+      genuinely similar wines from <strong>30,000 professional reviews</strong>,
+      and grounds every sentence it writes in what it actually retrieved. Anything
+      that fails to ground is dropped and regenerated, and citations are real
+      review ids rather than plausible-looking numbers. Alongside it runs
+      <strong>Blind Taste Mode</strong>: a 1.5B model, LoRA fine-tuned on this
+      laptop, that names the grape from a tasting note alone — and
+      <strong>beats Claude's zero-shot accuracy doing it</strong>.
+    </p>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="../writeup.md">Read the writeup</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/cellar-scanner">or the code</a>
+    </div>
+
+    <figure style="margin-top:38px">
+      <img width="1800" height="450" class="shot" src="../assets/banner.png"
+        alt="Cellar Scanner banner artwork." />
+    </figure>
+
+    <div class="claims">
+      <div class="claim">
+        <div class="n">27.7%</div>
+        <p>Top-1 blind-tasting accuracy from the fine-tuned 1.5B model, against
+           Claude's zero-shot <strong>23.0%</strong>.</p>
+      </div>
+      <div class="claim">
+        <div class="n">0.253</div>
+        <p>macro-F1, against Claude's 0.119. The gap is wider on F1 than on
+           accuracy, so it is not one lucky class.</p>
+      </div>
+      <div class="claim">
+        <div class="n">30,000</div>
+        <p>reviews in the index, stratified across every represented variety by
+           water-filling rather than skimming the top-rated.</p>
+      </div>
+      <div class="claim">
+        <div class="n">$0</div>
+        <p>per thousand calls. Local OCR, local embeddings, local inference, no
+           vision API key anywhere.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+<div class="route">
+
+  <section class="stop stop--key">
+    <p class="eyebrow">↓ the headline result</p>
+    <h2>A 1.5B specialist beat a frontier generalist</h2>
+
+    <div class="bignum">27.7%</div>
+    <p class="bignum-note">Top-1 grape identification from a masked tasting note. Claude zero-shot: 23.0%.</p>
+
+    <p>
+      A model small enough to run on a laptop, trained on this exact task,
+      out-performed a much larger general model prompted cold. That is the whole
+      argument for fine-tuning stated as a number rather than a claim.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>System</th><th>Top-1</th><th>Top-3</th><th>Macro-F1</th><th>Latency</th><th>Cost/1k</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Base Qwen2.5-1.5B (no fine-tune)</td><td>8.7%</td><td>14.3%</td><td>0.021</td><td>4.3s</td><td>$0</td></tr>
+          <tr class="win"><td>+ LoRA (this project)</td><td>27.7%</td><td>27.7%</td><td>0.253</td><td>10.6s</td><td>$0</td></tr>
+          <tr><td>Claude (teacher, zero-shot)</td><td>23.0%</td><td>30.5%</td><td>0.119</td><td>69.6s</td><td>Max sub</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:22px">
+      Claude keeps Top-3, and the reason is a real flaw rather than a mystery. The
+      LoRA model's Top-1 and Top-3 are <strong>identical</strong> because it never
+      populates ranks 2 and 3 at all: its training target was always a single-line
+      answer, so it is reproducing its training signal faithfully. A retrain with
+      true multi-item targets would close that gap. It is reported here rather than
+      buried, because a benchmark that only shows the row you won is not a benchmark.
+    </p>
+  </section>
+
+  <section class="stop stop--warn">
+    <p class="eyebrow">↓ the part that makes the number mean anything</p>
+    <h2>Blind means the grape name is masked out</h2>
+    <p>
+      Wine reviews routinely name the grape in the first clause — "this Cabernet
+      shows..." — so a blind-tasting benchmark built on raw review text is not a
+      tasting task at all. It is string matching, and it would have produced a
+      spectacular and worthless accuracy figure.
+    </p>
+    <p>
+      Every training and reference note therefore has grape names
+      <strong>masked out before scoring</strong>, and the masking rate is written
+      to <code>eval/masking_report.json</code> so the claim is auditable. The 27.7%
+      is what is left when the answer is genuinely not in the input.
+    </p>
+    <figure>
+      <div class="plate">
+        <img width="1200" height="1050" src="../eval/confusion_matrix.png" loading="lazy"
+          alt="Confusion matrix of predicted against true grape varieties, with a visible diagonal and clustered off-diagonal confusion between stylistically similar varieties." />
+      </div>
+      <figcaption>
+        Where it goes wrong is informative: the confusions cluster between
+        varieties that genuinely taste alike.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">↓ the pipeline</p>
+    <h2>Nothing leaves the laptop except the retrieval</h2>
+    <div class="grid">
+      <div class="cell">
+        <h3>Vision, entirely local</h3>
+        <p><code>tesseract</code> OCRs the label, then <code>claude -p</code> does
+           the domain check and structured extraction in one call. No Gemini or
+           OpenAI vision key required.</p>
+      </div>
+      <div class="cell">
+        <h3>It refuses</h3>
+        <p>Non-wine photos are rejected and low-confidence reads are flagged
+           <em>before</em> any retrieval happens, so a bad read never becomes a
+           confident recommendation.</p>
+      </div>
+      <div class="cell">
+        <h3>Grounded generation</h3>
+        <p>Every sentence of the profile and every pairing reason is checked
+           against the retrieved reviews. Anything that does not ground is dropped
+           and regenerated.</p>
+      </div>
+      <div class="cell">
+        <h3>Real citations</h3>
+        <p>Citation ids point at actual reviews in the index. There is no code path
+           that can produce a citation to something that was not retrieved.</p>
+      </div>
+    </div>
+    <figure>
+      <div class="plate">
+        <img width="1575" height="825" src="../assets/architecture.png" loading="lazy"
+          alt="Cellar Scanner pipeline diagram: label photo into local OCR, then structured extraction, then retrieval over a 30,000 review index, then grounded generation with citations, with the LoRA blind-taste model as a separate branch." />
+      </div>
+      <figcaption>The pipeline, including where the fine-tuned model sits.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">↓ training</p>
+    <h2>Trained on a laptop, loss curve committed</h2>
+    <p>
+      The adapter was trained on roughly <strong>37,000 winemag tasting
+      notes</strong> with the grape names masked out of the training text, so the
+      task is blind during training as well as at evaluation. The loss curve is in
+      the repository rather than described, which is the only way a reader can tell
+      a converged run from a hopeful one.
+    </p>
+    <figure>
+      <div class="plate">
+        <img width="1050" height="600" src="../eval/loss_curve.png" loading="lazy"
+          alt="Training loss curve for the LoRA fine-tune, descending steeply then flattening into a stable plateau." />
+      </div>
+      <figcaption>The training run, as it actually went.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stop stop--end">
+    <p class="eyebrow">Finish · what it is built on</p>
+    <h2>Where the numbers come from</h2>
+    <dl class="specs">
+      <div class="spec"><dt>Base model</dt><dd>Qwen2.5-1.5B, LoRA fine-tuned locally with MLX</dd></div>
+      <div class="spec"><dt>Training data</dt><dd>~37k winemag tasting notes, grape names masked</dd></div>
+      <div class="spec"><dt>Index</dt><dd>30,000 reviews, stratified across varieties by water-filling; <code>sentence-transformers</code> + Chroma</dd></div>
+      <div class="spec"><dt>OCR</dt><dd><code>tesseract</code>, locally</dd></div>
+      <div class="spec"><dt>Extraction</dt><dd><code>claude -p</code> on a Max subscription, so no per-token cost</dd></div>
+      <div class="spec"><dt>Benchmark</dt><dd><code>training/bench_classifier.py</code>, which subsamples for tractable iteration and discloses the subsample size</dd></div>
+      <div class="spec"><dt>Data lineage</dt><dd>The same review corpus is analysed in <a href="https://lyhjeremy.github.io/wine-score-inflation/">Wine Score Inflation</a> and searched in <a href="https://lyhjeremy.github.io/wine-sommelier-rag/">Wine Sommelier RAG</a></dd></div>
+    </dl>
+  </section>
+
+</div>
+</div>
+
+<div class="wrap">
+  <section class="close">
+    <h2>Small, specialised, and honest about where it loses</h2>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="../writeup.md">Read the writeup</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/cellar-scanner">or the code</a>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Cellar Scanner ·
+      <a href="../">Showcase</a> ·
+      <a href="../writeup.md">Writeup</a> ·
+      <a href="https://github.com/lyhjeremy/cellar-scanner">Source</a> ·
+      MIT © 2026 Jeremy Lee
+    </p>
+  </footer>
+</div>
+</body>
+</html>

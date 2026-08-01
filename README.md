@@ -9,6 +9,7 @@ real reviews from a 30,000-bottle index, plus a **locally fine-tuned model**
 that guesses the grape from a blind tasting note alone.
 
 > 🌐 **Overview:** https://lyhjeremy.github.io/cellar-scanner/
+> 📖 **Product overview:** https://lyhjeremy.github.io/cellar-scanner/overview/
 
 ## Why
 
