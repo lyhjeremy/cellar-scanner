@@ -1,116 +1,80 @@
-<p align="center">
-  <img src="assets/banner.png" alt="Cellar Scanner" width="100%">
-</p>
-
 # Cellar Scanner
+
+Photograph a wine label and get a profile and food pairings grounded in 30,000 Wine Enthusiast reviews, plus a locally fine-tuned LoRA model that guesses the grape from a blind tasting note.
+
+[Live site](https://lyhjeremy.github.io/cellar-scanner/) · [Write-up](https://lyhjeremy.github.io/cellar-scanner/overview/) · [Technical notes](writeup.md)
 
 Design and copy follow [these standards](https://github.com/lyhjeremy/lyhjeremy/blob/main/DESIGN_STANDARDS.md).
 
-Photograph a wine label: get a grounded profile and food pairings, cited to
-real reviews from a 30,000-bottle index, plus a **locally fine-tuned model**
-that guesses the grape from a blind tasting note alone.
+## Results
 
-> **Overview:** https://lyhjeremy.github.io/cellar-scanner/
-> **Product overview:** https://lyhjeremy.github.io/cellar-scanner/overview/
+Blind grape identification from a tasting note with the grape name masked, 40 varieties, held-out test split:
 
-## Why
+| System | N | Top-1 | Top-3 | Macro-F1 | Latency | Cost/1k |
+|---|---|---|---|---|---|---|
+| Base Qwen2.5-1.5B (no fine-tune) | 300 | 8.7% | 14.3% | 0.021 | 4.3 s | $0 |
+| **+ LoRA (this project)** | 300 | **27.7%** | 27.7% | **0.253** | 10.6 s | $0 |
+| Claude, zero-shot | 200 | 23.0% | **30.5%** | 0.119 | 69.6 s | Claude subscription |
 
-Ask a chatbot to identify or recommend a wine from a label photo and it will
-happily invent a producer, a score, a pairing, plausible-sounding and
-sometimes just wrong. Cellar Scanner reads the label for real (local OCR +
-Claude), retrieves genuinely similar wines from ~30,000 professional reviews,
-and grounds every claim in what was actually retrieved, refusing to guess
-when the label isn't legible enough to trust.
+- LoRA fine-tuning took Top-1 from 8.7% to 27.7%, 3.2 times the base model, and runs on a laptop with no network call.
+- The LoRA model leads Claude zero-shot on Top-1 (27.7% against 23.0%) and macro-F1 (0.253 against 0.119). The two were scored on different subsamples of 300 and 200 rows, and the Top-1 gap is about 1.2 standard errors, so it is a lead and not a clear win.
+- Claude leads on Top-3. The LoRA model's Top-1 and Top-3 are identical because its training target was a single answer (`"1. {variety}"`), so it never fills ranks 2 and 3.
 
-## How it works
+Full numbers, the confusion matrix and the dataset card are in [`eval/`](eval/), produced by [`training/bench_classifier.py`](training/bench_classifier.py).
 
-<p align="center">
-  <img src="assets/architecture.png" alt="Cellar Scanner pipeline" width="760">
-</p>
+![Pipeline: label photo, local OCR, claude -p extraction, Chroma retrieval, grounded recommendation; and the LoRA blind-taste branch](assets/architecture.png)
 
-- **Vision, entirely local.** No Gemini/OpenAI vision key required: `tesseract`
-  OCRs the label photo, then `claude -p` (Claude Max subscription, no
-  per-token cost) does the domain check and structured extraction in one call
-. Refusing non-wine photos and flagging low-confidence reads before any
-  retrieval happens.
-- **Retrieval.** A 30,000-review index (stratified across all represented
-  varieties via water-filling, not just the top-rated bottles), embedded
-  locally with `sentence-transformers` + Chroma.
-- **Grounded generation.** Every sentence of the profile and every pairing
-  reason is checked against the retrieved reviews (`ground_claims`); anything
-  that doesn't ground is dropped and regenerated. Citations are real review
-  ids, never invented.
-- **Blind Taste Mode.** A **Qwen2.5-1.5B model, LoRA fine-tuned locally** on
-  ~37k winemag tasting notes (grape names masked out of the training text so
-  the task is genuinely blind, not string matching) guesses the variety from
-  a tasting note alone, no label, no internet call, runs on this laptop.
+## Method
 
-## The fine-tune, honestly benchmarked
+**Classifier data.** `training/prep_classifier.py` builds 41,389 rows from the 40 varieties with at least 500 reviews, capped at 1,200 per variety, split by wine title so no wine is in both train and test (37,289 train, 2,076 validation, 2,024 test; leakage check passed). A regex masks the variety name and common synonyms in every note. It fired on 20.1% of rows ([`eval/masking_report.json`](eval/masking_report.json)), which would otherwise have turned the task into string matching.
 
-| System | Top-1 | Top-3 | Macro-F1 | Latency | Cost/1k |
-|---|---|---|---|---|---|
-| Base Qwen2.5-1.5B (no fine-tune) | 8.7% | 14.3% | 0.021 | 4.3s | $0 |
-| **+ LoRA (this project)** | **27.7%** | 27.7% | **0.253** | 10.6s | $0 |
-| Claude (teacher, zero-shot) | 23.0% | **30.5%** | 0.119 | 69.6s | Max subscription |
+**Fine-tune.** LoRA on `mlx-community/Qwen2.5-1.5B-Instruct-4bit` with `mlx_lm.lora` on Apple Silicon: 12 layers, batch 4, 800 iterations, learning rate 1.5e-4, sequence length 768. 3.96M trainable parameters (0.256%), 4.4 GB peak memory. Validation loss went from 3.895 to 1.196 ([`training/train_run.log`](training/train_run.log), [`eval/loss_curve.png`](eval/loss_curve.png)).
 
-**The fine-tuned local model beats Claude's zero-shot accuracy on Top-1** (27.7% vs
-23.0%). A specialized 1.5B model, trained on this exact task, outperforming a
-generalist frontier model prompted cold. Claude keeps the edge on Top-3 (30.5% vs
-27.7%), for a documented reason: see the known limitation below. Full numbers,
-methodology, and the confusion matrix in [`eval/`](eval/) and
-[`writeup.md`](writeup.md), generated by
-[`training/bench_classifier.py`](training/bench_classifier.py), which subsamples for
-tractable iteration and discloses the subsample size rather than hiding it.
+**Benchmark.** Base and LoRA run on a seeded 300-row subsample of the test split (`mlx_lm.generate` reloads the model per call, so the full set would take hours); Claude runs on a separate 200-row subsample. Answers are matched against the class vocabulary. Metrics: Top-1, Top-3, macro-F1, latency.
 
-**Known limitation, reported not hidden:** the LoRA model's Top-1 and Top-3 are
-identical. It never populates ranks 2–3, because its training target was always a
-single-line answer, not a full ranked list. It's reproducing its training signal
-faithfully; a future retrain with true multi-item targets would close this gap.
+**Scanner.** `tesseract` OCRs the label locally. One `claude -p` call checks the photo is a wine label and extracts a structured card (producer, wine, vintage, grape, region, country, confidence). The card queries a Chroma index of 30,000 reviews, embedded with sentence-transformers and stratified across varieties by water-filling. A second call writes the profile and pairings, and a token budgeter records what went into the prompt.
 
-Grape names are masked out of every training and reference tasting note before
-scoring. Otherwise many reviews simply name the grape ("this Cabernet
-shows...") and the task collapses to string matching, not blind tasting. The
-masking rate is reported in [`eval/masking_report.json`](eval/masking_report.json).
+**Guardrails.** A domain gate refuses non-wine photos. Vintage is range-checked and the grape is validated against the winemag vocabulary. Each profile sentence and pairing reason must match a retrieved review, or it is dropped and the answer regenerates; citations are real review ids. A low-confidence read asks for a retake. A semantic cache answers repeat scans, with the hit rate in the dev panel.
 
-## Guardrails
+Stack: Python, MLX / mlx-lm, Qwen2.5-1.5B, LoRA, sentence-transformers, Chroma, tesseract, Claude CLI, Gradio, faster-whisper (speech input), edge-tts (read-back), pydantic.
 
-- **Domain gate.** A non-wine photo gets a friendly refusal, not a
-  hallucinated card.
-- **Field validation.** Vintage range-checked, grape validated against the
-  winemag vocabulary.
-- **Claim grounding.** Every recommendation sentence must match a retrieved
-  review; ungrounded claims are dropped and regenerated.
-- **Confidence gate.** A low-confidence label read asks for a retake instead
-  of guessing.
-- **Semantic cache.** Re-scanning the same bottle is an instant, free cache
-  hit (measured hit-rate in the dev panel).
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `app.py` | Gradio app (Scan + Blind Taste Mode) |
-| `scripts/ingest.py` | Builds the 30k-review stratified index |
-| `training/prep_classifier.py` | Masked, leakage-checked classifier dataset |
-| `training/bench_classifier.py` | 3-way honest benchmark (base/LoRA/Claude) |
-| `src/` | Vendored toolkit (llm, vision, guardrails, context, cache) + `scanner.py` |
-| `eval/` | Benchmark results, confusion matrix, dataset card |
-
-## Running it
+## How to run
 
 ```bash
 pip install -r requirements.txt
-./setup_ocr.sh                      # tesseract + language packs (one-time)
-python scripts/ingest.py            # builds the wine review index
+./setup_ocr.sh                      # tesseract + language packs (one-time, uses Homebrew)
+python scripts/ingest.py            # builds the 30k-review index
 python training/prep_classifier.py  # builds the masked classifier dataset
 bash training/lora_harness/train.sh mlx-community/Qwen2.5-1.5B-Instruct-4bit \
     data/lora training/adapters 4 12 800 1.5e-4 768
-python app.py
+python app.py                       # Gradio app: Scan a label, Blind Taste Mode
 ```
 
-No API key required, everything runs locally except a `claude -p` call for
-generation (uses your Claude subscription, not a metered API).
+Generation uses `claude -p` and your Claude subscription. `.env.example` lists the optional overrides, including a `GEMINI_API_KEY` fallback and `ANTHROPIC_API_KEY` for when neither the CLI nor Gemini is available. MLX training and the LoRA model need Apple Silicon. There is no hosted demo.
+
+## Repo layout
+
+| Path | Purpose |
+|---|---|
+| `app.py` | Gradio app (Scan a label, Blind Taste Mode) |
+| `scripts/ingest.py` | Builds the 30k-review stratified index |
+| `scripts/make_assets.py` | Draws `assets/architecture.png` and `assets/banner.png` |
+| `training/prep_classifier.py` | Masked, leakage-checked classifier dataset |
+| `training/lora_harness/` | MLX LoRA training script and loss plotting |
+| `training/bench_classifier.py` | Base / LoRA / Claude benchmark |
+| `training/make_confusion_matrix.py` | Confusion matrix figure |
+| `src/` | Scanner, vision, retriever, guardrails, context budgeter, cache, audio, LLM wrapper |
+| `eval/` | Benchmark results, confusion matrix, loss curve, dataset card, masking report |
+| `tests/` | Benchmark classifier tests |
+
+## Limitations
+
+- The LoRA and Claude rows use different subsamples, and the Top-1 gap is within sampling noise.
+- The LoRA model cannot rank a second or third guess until it is retrained with ranked-list targets.
+- Training saw 3,200 of the 37,289 training rows (800 iterations at batch 4).
+- The labels are the dataset's variety field, which mixes grapes with blends and styles (Red Blend, Rosé, Port).
+- Label reading depends on OCR quality; the confidence gate asks for a retake when the read is weak.
 
 ## License
 
-MIT, see [`LICENSE`](LICENSE).
+[MIT](LICENSE) © 2026 Jeremy Lee

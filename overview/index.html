@@ -3,55 +3,57 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Cellar Scanner: a 1.5B model on a laptop that out-guesses Claude at blind tasting</title>
-<meta name="description" content="Photograph a wine label, get a profile grounded in 30,000 real reviews. Plus a locally fine-tuned LoRA that identifies the grape from a blind tasting note at 27.7% Top-1, beating Claude's zero-shot 23.0%." />
-<meta name="theme-color" content="#EDEDE7" />
+<title>Cellar Scanner: a LoRA-tuned 1.5B model names the grape from a blind tasting note at 27.7% Top-1</title>
+<meta name="description" content="Photograph a wine label and get a profile grounded in 30,000 Wine Enthusiast reviews. A Qwen2.5-1.5B model, LoRA fine-tuned on a laptop, names the grape from a masked tasting note at 27.7% Top-1, against 8.7% for the base model and 23.0% for Claude zero-shot." />
+<meta name="theme-color" content="#F1ECE3" />
 <meta property="og:title" content="Cellar Scanner" />
-<meta property="og:description" content="A specialised 1.5B model, fine-tuned on a laptop, beats a frontier model on the one task it was trained for." />
+<meta property="og:description" content="A 1.5B model fine-tuned on a laptop, benchmarked against its base model and Claude on blind grape identification." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://lyhjeremy.github.io/cellar-scanner/overview/" />
+<link href="" rel="stylesheet" />
 <style>
-@font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-400.woff2")format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-600.woff2")format("woff2");font-weight:600;font-display:swap}
-@font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-400.woff2")format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-600.woff2")format("woff2");font-weight:600;font-display:swap}
-@font-face{font-family:"IBM Plex Mono";src:url("../fonts/IBMPlexMono-400.woff2")format("woff2");font-weight:400;font-display:swap}
-
   :root {
-    --paper: #EDEDE7;
-    --card: #F5F5F0;
-    --plate: #F5F5F0;
-    --ink: #1C1E1B;
-    --ink2: #3d3d55;
-    --muted: #52564E;
-    --rule: #C6C7BF;
-    --accent: #2C5852;
-    --accent2: #7A5A1E;
-    --link: #8C3A1E;
-    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-    --sans: 'Source Sans 3', -apple-system, system-ui, sans-serif;
-    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
-    --shadow: 0 1px 2px rgba(26,26,46,.05), 0 10px 34px rgba(26,26,46,.07);
+    --paper: #F1ECE3;
+    --card: #F7F3EC;
+    --plate: #F7F3EC;
+    --ink: #24191B;
+    --ink2: #5C4C4E;
+    --muted: #5C4C4E;
+    --rule: #D3C8BC;
+    --accent: #7A2335;
+    --accent2: #6A5A1E;
+    --link: #7A2335;
+    --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --sans: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    --display: "Cormorant Garamond", Garamond, "Iowan Old Style", serif;
+    --edge: #7E7070;
     --spine:  92px;
     --col:    min(100% - 2.6rem, 62rem);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper: #14141f;
-      --card: #1c1c2a;
-      --plate: #f7f4ec;
-      --ink: #F2EFE6;
-      --ink2: #C9C4B6;
-      --muted: #918B7D;
-      --rule: #33313f;
-      --accent: #E0899A;
-      --accent2: #E3BC5E;
-      --link: #22D3EE;
-      --shadow: 0 1px 2px rgba(0,0,0,.32), 0 10px 34px rgba(0,0,0,.4);
+      --paper: #1C1517;
+      --card: #261D20;
+      --plate: #261D20;
+      --ink: #EDE3DD;
+      --ink2: #B6A6A3;
+      --muted: #B6A6A3;
+      --rule: #413337;
+      --accent: #E08A99;
+      --accent2: #C9B46A;
+      --link: #E08A99;
+      --edge: #7A6A6C;
     }
   }
 
-  * { box-sizing: border-box; }
+  @font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-400.woff2")format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:"Source Serif 4";src:url("../fonts/SourceSerif4-600.woff2")format("woff2");font-weight:600;font-display:swap}
+  @font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-400.woff2")format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:"IBM Plex Sans";src:url("../fonts/IBMPlexSans-600.woff2")format("woff2");font-weight:600;font-display:swap}
+  @font-face{font-family:"IBM Plex Mono";src:url("../fonts/IBMPlexMono-400.woff2")format("woff2");font-weight:400;font-display:swap}
+
+  * { box-sizing: border-box; border-radius: 0; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0; background: var(--paper); color: var(--ink);
@@ -210,61 +212,104 @@
     html { scroll-behavior: auto; }
     .btn { }
   }
+  @font-face{font-family:"Cormorant Garamond";src:url("../fonts/CormorantGaramond-600.woff2")format("woff2");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:"Cormorant Garamond";src:url("../fonts/CormorantGaramond-500i.woff2")format("woff2");font-weight:500;font-style:italic;font-display:swap}
 
+  .btn:hover { transform: none; background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  .pull { border: 1px solid var(--edge); border-left: 1px solid var(--edge); background: transparent; }
+  .term { background: var(--card); color: var(--ink); border: 1px solid var(--rule); }
+  .term .c { color: var(--muted); } .term .g { color: var(--accent2); } .term .y { color: var(--accent); }
+  .logo, .hero h1, h2, .claim .n, .bignum { font-family: var(--display); }
+
+  /* Cellar: a printed wine list. Centered serif masthead, italic notes, dotted leaders. */
+  :root { --col: min(100% - 2.6rem, 50rem); }
+  .masthead { justify-content: center; text-align: center; border-bottom: 1px solid var(--rule); padding-bottom: 18px; }
+  .logo { font-weight: 600; font-size: 25px; letter-spacing: .01em; }
+  .tagline { font-family: var(--display); font-style: italic; font-size: 18px; }
+  .hero { text-align: center; }
+  .hero h1, .hero-sub { margin-left: auto; margin-right: auto; }
+  .hero h1 { font-weight: 600; font-size: clamp(44px, 7vw, 84px); letter-spacing: -.01em; line-height: 1; max-width: 16ch; }
+  .kicker { font-family: var(--display); font-style: italic; font-weight: 500; font-size: clamp(21px, 2.4vw, 26px); }
+  .cta-row { justify-content: center; }
+  .claims { text-align: left; }
+  .claim, .claim:first-child, .claim:nth-child(2) { border-top: 0; border-bottom: 1px dotted var(--edge); }
+  .claim .n { font-weight: 600; font-size: 46px; letter-spacing: 0; }
+  h2 { font-weight: 600; font-size: clamp(32px, 4.4vw, 46px); letter-spacing: -.005em; line-height: 1.05; }
+  .eyebrow { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 19px;
+             letter-spacing: 0; text-transform: none; color: var(--accent); }
+  :root { --spine: 0px; }
+  .route::before, .stop::before { display: none; }
+  .stop { padding-left: 0; }
+  .stop + .stop { border-top: 1px solid var(--rule); padding-top: 56px; }
+  .bignum { font-weight: 600; letter-spacing: -.01em; }
+
+
+  .bignum { line-height: 1.02; margin-bottom: 14px; }
+  .grid { display: block; background: none; border: 0; }
+  /* Signature: the model's most common mistakes, set as a blind-tasting sheet. */
+  .sheet { margin: 30px auto 0; max-width: 38rem; border: 1px solid var(--edge); background: var(--card); padding: 22px 26px 18px; }
+  .sheet h3 { font-family: var(--display); font-weight: 600; font-size: 26px; text-align: center; margin: 0; }
+  .sheet .sub { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 18px; text-align: center; color: var(--ink2); margin: 2px 0 14px; max-width: none; }
+  .sheet .hd, .sheet .row { display: grid; grid-template-columns: minmax(0, 1fr) 1.6rem minmax(0, 1fr) 3.4rem; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px dotted var(--edge); }
+  .sheet .hd { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 17px; color: var(--ink2); border-bottom: 1px solid var(--edge); }
+  .sheet .row span { font-family: var(--serif); font-size: 16.5px; color: var(--ink); }
+  .sheet .row .to { color: var(--ink2); text-align: center; }
+  .sheet .row .called { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 19px; color: var(--accent); }
+  .sheet .row .n { font-family: var(--display); font-weight: 600; font-size: 20px; text-align: right; color: var(--ink2); }
+  .sheet .hd .n { text-align: right; }
+  .sheet .foot { font-family: var(--sans); font-size: 14px; color: var(--ink2); margin: 12px 0 0; max-width: none; }
+  @media (max-width: 480px) { .sheet { padding: 18px 12px 14px; } .sheet .hd, .sheet .row { grid-template-columns: minmax(0, 1fr) 1rem minmax(0, 1fr) 2rem; gap: 4px; } .sheet .row span { font-size: 14.5px; } .sheet .row .called { font-size: 16px; } }
+  .guards { margin: 22px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--edge); }
+  .guards li { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 16px; padding: 11px 0; border-bottom: 1px dotted var(--edge); font-family: var(--sans); font-size: 15.5px; color: var(--ink2); }
+  .guards li b { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 19px; color: var(--ink); }
+  @media (max-width: 560px) { .guards li { grid-template-columns: 1fr; gap: 2px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="masthead">
     <div class="logo"><span class="dot" aria-hidden="true"></span>Cellar Scanner</div>
-    <div class="tagline">label in, grounded profile out</div>
+    <div class="tagline">Label in, grounded profile out</div>
   </header>
 
   <section class="hero">
-    <p class="kicker">Ask a chatbot about a wine label and it will invent a producer.</p>
-    <h1>This one refuses instead.</h1>
+    <p class="kicker">Local OCR, grounded retrieval and a fine-tuned grape classifier</p>
+    <h1>A 1.5B model tuned on a laptop names the grape from a blind note</h1>
 
     <p class="hero-sub">
-      Photograph a bottle and Cellar Scanner reads the label for real, retrieves
-      genuinely similar wines from <strong>30,000 professional reviews</strong>,
-      and grounds every sentence it writes in what it actually retrieved. Anything
-      that fails to ground is dropped and regenerated, and citations are real
-      review ids rather than plausible-looking numbers. Alongside it runs
-      <strong>Blind Taste Mode</strong>: a 1.5B model, LoRA fine-tuned on this
-      laptop, that names the grape from a tasting note alone, and
-      <strong>beats Claude's zero-shot accuracy doing it</strong>.
+      Cellar Scanner reads a wine label with local OCR and Claude, retrieves
+      similar wines from 30,000 Wine Enthusiast reviews, and keeps only the
+      sentences it can ground in those reviews. Its Blind Taste Mode runs a
+      Qwen2.5-1.5B model, LoRA fine-tuned with MLX on Apple Silicon, that
+      guesses the grape from a tasting note with the grape name masked out:
+      <strong>27.7% Top-1</strong> across 40 varieties, against 8.7% for the
+      untuned base model and 23.0% for Claude prompted zero-shot.
     </p>
 
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/lyhjeremy/cellar-scanner/blob/main/writeup.md">Read the writeup</a>
-      <a class="textlink" href="https://github.com/lyhjeremy/cellar-scanner">or the code</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/cellar-scanner">Code on GitHub</a>
     </div>
-
-    <figure style="margin-top:38px">
-      <img class="shot" src="../assets/banner.png"
-        alt="Cellar Scanner banner artwork." />
-    </figure>
 
     <div class="claims">
       <div class="claim">
         <div class="n">27.7%</div>
-        <p>Top-1 blind-tasting accuracy from the fine-tuned 1.5B model, against
-           Claude's zero-shot <strong>23.0%</strong>.</p>
+        <p>Top-1 accuracy of the LoRA model on 40 grape varieties, 3.2 times the
+           base model's 8.7%.</p>
       </div>
       <div class="claim">
         <div class="n">0.253</div>
-        <p>macro-F1, against Claude's 0.119. The gap is wider on F1 than on
-           accuracy, so it is not one lucky class.</p>
+        <p>macro-F1 for the LoRA model, against 0.119 for Claude zero-shot and
+           0.021 for the base model.</p>
       </div>
       <div class="claim">
-        <div class="n">30,000</div>
-        <p>reviews in the index, stratified across every represented variety by
-           water-filling rather than skimming the top-rated.</p>
+        <div class="n">10.6 s</div>
+        <p>per note on the laptop, against 69.6 s for Claude through the CLI.</p>
       </div>
       <div class="claim">
-        <div class="n">$0</div>
-        <p>per thousand calls. Local OCR, local embeddings, local inference, no
-           vision API key anywhere.</p>
+        <div class="n">20.1%</div>
+        <p>of notes named their own grape and were masked before training and
+           scoring.</p>
       </div>
     </div>
   </section>
@@ -274,133 +319,185 @@
 <div class="route">
 
   <section class="stop stop--key">
-    <p class="eyebrow">↓ the headline result</p>
-    <h2>A 1.5B specialist beat a frontier generalist</h2>
-
-    <div class="bignum">27.7%</div>
-    <p class="bignum-note">Top-1 grape identification from a masked tasting note. Claude zero-shot: 23.0%.</p>
-
+    <p class="eyebrow">The benchmark</p>
+    <h2>Base model, LoRA, and Claude on the same task</h2>
     <p>
-      A model small enough to run on a laptop, trained on this exact task,
-      out-performed a much larger general model prompted cold. That is the whole
-      argument for fine-tuning stated as a number rather than a claim.
+      <code>training/bench_classifier.py</code> scores three systems on the
+      held-out test split (2,024 rows). The base and LoRA models were run on a
+      seeded 300-row subsample, because <code>mlx_lm.generate</code> reloads
+      the model on every call; Claude was run on a separate 200-row
+      subsample.
     </p>
     <div class="tablewrap">
       <table>
         <thead>
-          <tr><th>System</th><th>Top-1</th><th>Top-3</th><th>Macro-F1</th><th>Latency</th><th>Cost/1k</th></tr>
+          <tr><th>System</th><th>N</th><th>Top-1</th><th>Top-3</th><th>Macro-F1</th><th>Latency</th><th>Cost/1k</th></tr>
         </thead>
         <tbody>
-          <tr><td>Base Qwen2.5-1.5B (no fine-tune)</td><td>8.7%</td><td>14.3%</td><td>0.021</td><td>4.3s</td><td>$0</td></tr>
-          <tr class="win"><td>+ LoRA (this project)</td><td>27.7%</td><td>27.7%</td><td>0.253</td><td>10.6s</td><td>$0</td></tr>
-          <tr><td>Claude (teacher, zero-shot)</td><td>23.0%</td><td>30.5%</td><td>0.119</td><td>69.6s</td><td>Max sub</td></tr>
+          <tr><td>Base Qwen2.5-1.5B</td><td>300</td><td>8.7%</td><td>14.3%</td><td>0.021</td><td>4.3 s</td><td>$0</td></tr>
+          <tr class="win"><td>+ LoRA (this project)</td><td>300</td><td>27.7%</td><td>27.7%</td><td>0.253</td><td>10.6 s</td><td>$0</td></tr>
+          <tr><td>Claude, zero-shot</td><td>200</td><td>23.0%</td><td>30.5%</td><td>0.119</td><td>69.6 s</td><td>Subscription</td></tr>
         </tbody>
       </table>
     </div>
     <p style="margin-top:22px">
-      Claude keeps Top-3, and the reason is a real flaw rather than a mystery. The
-      LoRA model's Top-1 and Top-3 are <strong>identical</strong> because it never
-      populates ranks 2 and 3 at all: its training target was always a single-line
-      answer, so it is reproducing its training signal faithfully. A retrain with
-      true multi-item targets would close that gap. It is reported here rather than
-      buried, because a benchmark that only shows the row you won is not a benchmark.
+      The LoRA model is ahead of Claude on Top-1 by 4.7 points, but the two
+      were scored on different subsamples of 300 and 200 rows, and at those
+      sizes the gap is about 1.2 standard errors. It is a lead, not a clear
+      win. The macro-F1 gap (0.253 against 0.119) is wider, which says the LoRA
+      model's hits are spread across more varieties. Claude is ahead on Top-3
+      (30.5% against 27.7%).
     </p>
+    <p>
+      The LoRA model's Top-1 and Top-3 are identical because it never fills
+      ranks 2 and 3. Its training target was the single line
+      <code>"1. {variety}"</code>, so it learned to give one answer and stop. A
+      retrain with three-item targets would let it use the extra guesses.
+    </p>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">Where it goes wrong</p>
+    <h2>The mistakes are the ones a taster would make</h2>
+    <p>
+      The most frequent confusions in the LoRA model's test predictions pair
+      grapes that share a style: Cabernet Sauvignon read as Cabernet Franc,
+      Nebbiolo read as Sangiovese, and a group of aromatic or fresh whites
+      read as Viognier.
+    </p>
+
+    <div class="sheet" role="group" aria-label="The ten most common confusions of the LoRA model, from eval/benchmark.md">
+      <h3>Blind tasting, marked</h3>
+      <p class="sub">Most common confusions, LoRA model</p>
+      <div class="hd"><span>Poured</span><span></span><span>Called</span><span class="n">Times</span></div>
+      <div class="row"><span>Cabernet Sauvignon</span><span class="to">to</span><span class="called">Cabernet Franc</span><span class="n">10</span></div>
+      <div class="row"><span>Pinot Gris</span><span class="to">to</span><span class="called">Viognier</span><span class="n">8</span></div>
+      <div class="row"><span>Syrah</span><span class="to">to</span><span class="called">Cabernet Franc</span><span class="n">6</span></div>
+      <div class="row"><span>Nebbiolo</span><span class="to">to</span><span class="called">Sangiovese</span><span class="n">6</span></div>
+      <div class="row"><span>Red Blend</span><span class="to">to</span><span class="called">Sangiovese</span><span class="n">5</span></div>
+      <div class="row"><span>Chardonnay</span><span class="to">to</span><span class="called">Viognier</span><span class="n">5</span></div>
+      <div class="row"><span>Portuguese White</span><span class="to">to</span><span class="called">Viognier</span><span class="n">5</span></div>
+      <div class="row"><span>Grüner Veltliner</span><span class="to">to</span><span class="called">Viognier</span><span class="n">5</span></div>
+      <div class="row"><span>Riesling</span><span class="to">to</span><span class="called">Viognier</span><span class="n">5</span></div>
+      <div class="row"><span>Sauvignon Blanc</span><span class="to">to</span><span class="called">Viognier</span><span class="n">5</span></div>
+      <p class="foot">From <code>eval/benchmark.md</code>, 300-row subsample.</p>
+    </div>
+
+    <figure>
+      <div class="plate">
+        <img width="1200" height="1050" src="../eval/confusion_matrix.png" loading="lazy"
+          alt="Confusion matrix for the twelve most frequent test varieties. The largest off-diagonal cell is Cabernet Sauvignon predicted as Cabernet Franc, ten times; Rosé and Sparkling Blend are mostly correct." />
+      </div>
+      <figcaption>Confusion matrix for the twelve most frequent test varieties.</figcaption>
+    </figure>
   </section>
 
   <section class="stop stop--warn">
-    <p class="eyebrow">↓ the part that makes the number mean anything</p>
-    <h2>Blind means the grape name is masked out</h2>
+    <p class="eyebrow">Making the task blind</p>
+    <h2>Masking the grape name, and three bugs found by running it</h2>
     <p>
-      Wine reviews routinely name the grape in the first clause, "this Cabernet
-      shows...", so a blind-tasting benchmark built on raw review text is not a
-      tasting task at all. It is string matching, and it would have produced a
-      spectacular and worthless accuracy figure.
+      Many reviews name the grape outright ("this Cabernet shows..."), which
+      would turn blind tasting into string matching. A regex masks each
+      variety name and its common synonyms before training and scoring; it
+      fired on 20.1% of the 41,389 rows, and the rate is written to
+      <code>eval/masking_report.json</code>.
     </p>
     <p>
-      Every training and reference note therefore has grape names
-      <strong>masked out before scoring</strong>, and the masking rate is written
-      to <code>eval/masking_report.json</code> so the claim is auditable. The 27.7%
-      is what is left when the answer is genuinely not in the input.
+      The dataset keeps the 40 varieties with at least 500 reviews, caps each
+      at 1,200, and splits by wine title so no wine appears in both train and
+      test (37,289 train, 2,076 validation, 2,024 test; the leakage check in
+      <code>eval/dataset_card.json</code> passed).
+    </p>
+    <p>
+      Three numbers looked wrong during the build, and each was a bug. The
+      first index build reached a third of its 30,000 target until a
+      water-filling allocation replaced a flat per-variety quota. Claude first
+      scored below the untrained base model because markdown-wrapped answers
+      failed an exact string match; answers are now matched against the class
+      list. And the first benchmark read the test file in order and covered
+      only 6 of 40 varieties; a seeded shuffle fixed it (40 of 40 in the
+      300-row subsample) and changed the headline result.
+    </p>
+  </section>
+
+  <section class="stop">
+    <p class="eyebrow">The training run</p>
+    <h2>800 iterations on a laptop</h2>
+    <p>
+      The adapter was trained with <code>mlx_lm.lora</code> on the 4-bit
+      <code>Qwen2.5-1.5B-Instruct</code>: 12 layers, batch 4, 800 iterations,
+      learning rate 1.5e-4, sequence length 768. That is 3.96M trainable
+      parameters (0.256% of the model), 3,200 training examples seen, and a
+      peak of 4.4 GB of memory. Validation loss fell from 3.895 at the start to
+      1.154 at iteration 600 and finished at 1.196.
     </p>
     <figure>
       <div class="plate">
-        <img src="../eval/confusion_matrix.png" loading="lazy"
-          alt="Confusion matrix of predicted against true grape varieties, with a visible diagonal and clustered off-diagonal confusion between stylistically similar varieties." />
+        <img width="1050" height="600" src="../eval/loss_curve.png" loading="lazy"
+          alt="Training and validation loss for the LoRA fine-tune over 800 iterations, falling steeply in the first hundred iterations and then flattening near 1.2." />
       </div>
-      <figcaption>
-        Where it goes wrong is informative: the confusions cluster between
-        varieties that genuinely taste alike.
-      </figcaption>
+      <figcaption>Loss over the run, from <code>training/train_run.log</code>.</figcaption>
     </figure>
   </section>
 
   <section class="stop">
-    <p class="eyebrow">↓ the pipeline</p>
-    <h2>Nothing leaves the laptop except the retrieval</h2>
-    <div class="grid">
-      <div class="cell">
-        <h3>Vision, entirely local</h3>
-        <p><code>tesseract</code> OCRs the label, then <code>claude -p</code> does
-           the domain check and structured extraction in one call. No Gemini or
-           OpenAI vision key required.</p>
-      </div>
-      <div class="cell">
-        <h3>It refuses</h3>
-        <p>Non-wine photos are rejected and low-confidence reads are flagged
-           <em>before</em> any retrieval happens, so a bad read never becomes a
-           confident recommendation.</p>
-      </div>
-      <div class="cell">
-        <h3>Grounded generation</h3>
-        <p>Every sentence of the profile and every pairing reason is checked
-           against the retrieved reviews. Anything that does not ground is dropped
-           and regenerated.</p>
-      </div>
-      <div class="cell">
-        <h3>Real citations</h3>
-        <p>Citation ids point at actual reviews in the index. There is no code path
-           that can produce a citation to something that was not retrieved.</p>
-      </div>
-    </div>
+    <p class="eyebrow">The scanner</p>
+    <h2>From a label photo to a cited profile</h2>
+    <p>
+      <code>tesseract</code> reads the label locally. One <code>claude -p</code>
+      call checks that the photo is a wine label and extracts a structured card
+      (producer, grape, vintage, region). The card queries a Chroma index of
+      30,000 reviews, embedded with sentence-transformers and sampled across
+      every represented variety. A second Claude call writes a profile and
+      pairings from the retrieved reviews, and a token budgeter records what
+      went into that prompt.
+    </p>
+    <ol class="guards">
+      <li><b>Domain gate</b><span>A photo that is not a wine label gets a refusal, not a made-up card.</span></li>
+      <li><b>Field validation</b><span>Vintage is range-checked; the grape is validated against the winemag vocabulary.</span></li>
+      <li><b>Claim grounding</b><span>Each sentence of the profile and each pairing reason must match a retrieved review; the rest are dropped and the answer regenerates. Citations are real review ids.</span></li>
+      <li><b>Confidence gate</b><span>A low-confidence read asks for a retake instead of guessing.</span></li>
+      <li><b>Semantic cache</b><span>Re-scanning the same bottle returns the cached answer; the hit rate shows in the dev panel.</span></li>
+    </ol>
     <figure>
       <div class="plate">
-        <img src="../assets/architecture.png" loading="lazy"
-          alt="Cellar Scanner pipeline diagram: label photo into local OCR, then structured extraction, then retrieval over a 30,000 review index, then grounded generation with citations, with the LoRA blind-taste model as a separate branch." />
+        <img width="1575" height="825" src="../assets/architecture.png" loading="lazy"
+          alt="Pipeline diagram: label photo to local OCR to claude -p extraction to a wine card, which queries a 30,000-review Chroma index; claude -p writes the grounded recommendation and a cited profile with pairings and text-to-speech. A separate branch sends a blind tasting note to the LoRA model, which guesses the grape at 27.7% top-1 against 8.7% for the base model." />
       </div>
-      <figcaption>The pipeline, including where the fine-tuned model sits.</figcaption>
+      <figcaption>The scan pipeline, with Blind Taste Mode as a separate branch.</figcaption>
     </figure>
   </section>
 
-  <section class="stop">
-    <p class="eyebrow">↓ training</p>
-    <h2>Trained on a laptop, loss curve committed</h2>
+  <section class="stop stop--warn">
+    <p class="eyebrow">Limitations</p>
+    <h2>What the numbers do not show</h2>
     <p>
-      The adapter was trained on roughly <strong>37,000 winemag tasting
-      notes</strong> with the grape names masked out of the training text, so the
-      task is blind during training as well as at evaluation. The loss curve is in
-      the repository rather than described, which is the only way a reader can tell
-      a converged run from a hopeful one.
+      The LoRA-versus-Claude comparison uses different subsamples and is
+      within sampling noise on Top-1. The LoRA model cannot rank a second or
+      third guess. Training saw 3,200 of the 37,289 training rows; whether a longer run
+      would help is untested here. The labels are the
+      dataset's variety field, which mixes grapes with blends and styles (Red
+      Blend, Rosé, Port), so some "errors" are arguable.
     </p>
-    <figure>
-      <div class="plate">
-        <img src="../eval/loss_curve.png" loading="lazy"
-          alt="Training loss curve for the LoRA fine-tune, descending steeply then flattening into a stable plateau." />
-      </div>
-      <figcaption>The training run, as it actually went.</figcaption>
-    </figure>
+    <p>
+      There is no hosted demo: the app is a Gradio interface run locally with
+      <code>python app.py</code>. Label reading depends on OCR quality; when the read is weak, the
+      confidence gate asks for a retake.
+    </p>
   </section>
 
   <section class="stop stop--end">
-    <p class="eyebrow">Finish · what it is built on</p>
-    <h2>Where the numbers come from</h2>
+    <p class="eyebrow">How it was built</p>
+    <h2>Stack</h2>
     <dl class="specs">
-      <div class="spec"><dt>Base model</dt><dd>Qwen2.5-1.5B, LoRA fine-tuned locally with MLX</dd></div>
-      <div class="spec"><dt>Training data</dt><dd>~37k winemag tasting notes, grape names masked</dd></div>
-      <div class="spec"><dt>Index</dt><dd>30,000 reviews, stratified across varieties by water-filling; <code>sentence-transformers</code> + Chroma</dd></div>
-      <div class="spec"><dt>OCR</dt><dd><code>tesseract</code>, locally</dd></div>
-      <div class="spec"><dt>Extraction</dt><dd><code>claude -p</code> on a Max subscription, so no per-token cost</dd></div>
-      <div class="spec"><dt>Benchmark</dt><dd><code>training/bench_classifier.py</code>, which subsamples for tractable iteration and discloses the subsample size</dd></div>
-      <div class="spec"><dt>Data lineage</dt><dd>The same review corpus is analysed in <a href="https://lyhjeremy.github.io/wine-score-inflation/">Wine Score Inflation</a> and searched in <a href="https://lyhjeremy.github.io/wine-sommelier-rag/">Wine Sommelier RAG</a></dd></div>
+      <div class="spec"><dt>Fine-tune</dt><dd>Qwen2.5-1.5B-Instruct (MLX 4-bit), LoRA via <code>mlx_lm.lora</code> on Apple Silicon</dd></div>
+      <div class="spec"><dt>Training data</dt><dd>41,389 masked Wine Enthusiast notes, 40 varieties, split by wine title</dd></div>
+      <div class="spec"><dt>Index</dt><dd>30,000 reviews, water-filling stratified by variety; sentence-transformers + Chroma</dd></div>
+      <div class="spec"><dt>Vision</dt><dd><code>tesseract</code> OCR, then <code>claude -p</code> for the domain check and extraction</dd></div>
+      <div class="spec"><dt>Generation</dt><dd><code>claude -p</code> on a Claude subscription, so no per-token cost</dd></div>
+      <div class="spec"><dt>App</dt><dd>Gradio (<code>app.py</code>): Scan and Blind Taste Mode</dd></div>
+      <div class="spec"><dt>Benchmark</dt><dd><code>training/bench_classifier.py</code>; results in <code>eval/</code></dd></div>
+      <div class="spec"><dt>Related</dt><dd>The same review corpus is analysed in <a href="https://lyhjeremy.github.io/wine-score-inflation/">Wine Score Inflation</a> and searched in <a href="https://lyhjeremy.github.io/wine-sommelier-rag/">Wine Sommelier RAG</a></dd></div>
     </dl>
   </section>
 
@@ -409,19 +506,21 @@
 
 <div class="wrap">
   <section class="close">
-    <h2>Small, specialised, and honest about where it loses</h2>
+    <h2>Small, specialized, and measured against its teacher</h2>
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/lyhjeremy/cellar-scanner/blob/main/writeup.md">Read the writeup</a>
-      <a class="textlink" href="https://github.com/lyhjeremy/cellar-scanner">or the code</a>
+      <a class="textlink" href="https://github.com/lyhjeremy/cellar-scanner">Code on GitHub</a>
     </div>
   </section>
 
   <footer>
     <p>
       Cellar Scanner ·
-      <a href="../">Showcase</a> ·
+      <a href="../">Project page</a> ·
       <a href="https://github.com/lyhjeremy/cellar-scanner/blob/main/writeup.md">Writeup</a> ·
       <a href="https://github.com/lyhjeremy/cellar-scanner">Source</a> ·
+      <a href="../privacy/">Privacy</a> ·
+      <a href="../terms/">Terms</a> ·
       MIT © 2026 Jeremy Lee
     </p>
   </footer>
