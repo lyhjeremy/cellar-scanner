@@ -32,7 +32,7 @@ A Qwen2.5-1.5B-Instruct model (4-bit MLX) was LoRA fine-tuned on the masked note
 | **+ LoRA (this project)** | 300 | **27.7%** | 27.7% | **0.253** | 10.6 s | $0 |
 | Claude (teacher, zero-shot) | 200 | 23.0% | **30.5%** | 0.119 | 69.6 s | Claude subscription |
 
-Fine-tuning lifted Top-1 3.2 times over the untrained base model. The LoRA model's Top-1 (27.7%) is ahead of Claude's zero-shot Top-1 (23.0%), at $0 marginal cost, about a seventh of the latency, and with no network call. Base and LoRA were scored on a 300-row subsample and Claude on a separate 200-row one, and at those sizes the 4.7-point gap is about 1.2 standard errors. I read it as the small specialist matching or slightly beating the generalist on the one task it was trained for, which is a narrower claim than a decisive win. The macro-F1 gap (0.253 against 0.119) is larger, which means the LoRA model's correct answers are spread across more varieties.
+Fine-tuning lifted Top-1 3.2 times over the untrained base model. The LoRA model's Top-1 (27.7%) is ahead of Claude's zero-shot Top-1 (23.0%), at $0 marginal cost, about a seventh of the latency, and with no network call. Base and LoRA were scored on a 300-row subsample and Claude on the first 200 of those rows, so the two can be compared note by note. On the shared 200 the LoRA model was right on 55 and Claude on 46; of the 67 notes only one of them got right, the split was 38 to 29, which an exact sign test puts at p = 0.33. (An earlier version of this note called Claude's rows a separate subsample and gave a standard-error estimate; the code in `bench_classifier.py` takes `rows[:200]`.) I read it as the small specialist matching or slightly beating the generalist on the one task it was trained for, which is a narrower claim than a decisive win. The macro-F1 gap (0.253 against 0.119) is larger, which means the LoRA model's correct answers are spread across more varieties.
 
 Claude leads on Top-3 (30.5% against 27.7%) for a specific reason, covered below: the LoRA model cannot use a second or third guess yet.
 
@@ -64,7 +64,7 @@ None of these would have shown up in code review. Each came from running the pip
 
 ## Limitations
 
-- The LoRA and Claude rows use different subsamples, and the Top-1 gap is within sampling noise.
+- The Top-1 gap between the LoRA model and Claude is within sampling noise (sign test p = 0.33 on 200 shared notes).
 - Training saw 3,200 examples (800 iterations at batch 4) of the 37,289-row training split.
 - The variety labels mix grapes with blends and styles (Red Blend, Rosé, Port).
 - MLX training and the LoRA model need Apple Silicon, and there is no hosted demo.

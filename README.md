@@ -17,7 +17,7 @@ Blind grape identification from a tasting note with the grape name masked, 40 va
 | Claude, zero-shot | 200 | 23.0% | **30.5%** | 0.119 | 69.6 s | Claude subscription |
 
 - LoRA fine-tuning took Top-1 from 8.7% to 27.7%, 3.2 times the base model, and runs on a laptop with no network call.
-- The LoRA model leads Claude zero-shot on Top-1 (27.7% against 23.0%) and macro-F1 (0.253 against 0.119). The two were scored on different subsamples of 300 and 200 rows, and the Top-1 gap is about 1.2 standard errors, so it is a lead that sampling noise could erase.
+- The LoRA model leads Claude zero-shot on Top-1 (27.7% against 23.0%) and macro-F1 (0.253 against 0.119). Claude's 200 test notes are the first 200 of the LoRA model's 300, so the two can be compared note by note: on those 200 the LoRA model is right on 55 and Claude on 46, and of the 67 notes only one of them got right the split is 38 to 29 (exact sign test p = 0.33). It is a lead that sampling noise could erase.
 - Claude leads on Top-3. The LoRA model's Top-1 and Top-3 are identical because its training target was a single answer (`"1. {variety}"`), so it never fills ranks 2 and 3.
 
 Full numbers, the confusion matrix and the dataset card are in [`eval/`](eval/), produced by [`training/bench_classifier.py`](training/bench_classifier.py).
@@ -36,7 +36,7 @@ LoRA on `mlx-community/Qwen2.5-1.5B-Instruct-4bit` with `mlx_lm.lora` on Apple S
 
 ### Benchmark
 
-Base and LoRA run on a seeded 300-row subsample of the test split (`mlx_lm.generate` reloads the model per call, so the full set would take hours); Claude runs on a separate 200-row subsample. Answers are matched against the class vocabulary. Metrics: Top-1, Top-3, macro-F1, latency.
+Base and LoRA run on a seeded 300-row subsample of the test split (`mlx_lm.generate` reloads the model per call, so the full set would take hours); Claude runs on the first 200 of those same rows. (`eval/benchmark.md` calls this a separate subsample; the code takes `rows[:200]` of the 300.) `training/paired_check.py` re-scores the cached outputs on the 200 shared rows and writes `eval/paired_lora_claude.json` and the quiz data in `eval/blind_samples.json`. Answers are matched against the class vocabulary. Metrics: Top-1, Top-3, macro-F1, latency.
 
 ### Scanner
 
@@ -79,7 +79,7 @@ Generation uses `claude -p` and your Claude subscription. `.env.example` lists t
 
 ## Limitations
 
-- The LoRA and Claude rows use different subsamples, and the Top-1 gap is within sampling noise.
+- The Top-1 gap between the LoRA model and Claude is within sampling noise (sign test p = 0.33 on the 200 shared notes).
 - The LoRA model cannot rank a second or third guess until it is retrained with ranked-list targets.
 - Training saw 3,200 of the 37,289 training rows (800 iterations at batch 4).
 - The labels are the dataset's variety field, which mixes grapes with blends and styles (Red Blend, Rosé, Port).

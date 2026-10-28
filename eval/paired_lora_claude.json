@@ -1,0 +1,13 @@
+{
+  "n_shared_rows": 200,
+  "top1_on_shared_rows": {
+    "base": 0.1,
+    "lora": 0.275,
+    "claude": 0.23
+  },
+  "both_right": 17,
+  "lora_only_right": 38,
+  "claude_only_right": 29,
+  "neither_right": 116,
+  "sign_test_p_two_sided": 0.3284
+}
