@@ -2,27 +2,27 @@
 
 *Photograph a label, get a grounded recommendation, and test a locally fine-tuned model that names the grape blind.*
 
-## The idea
+## Why build it
 
-Point a phone at a wine bottle and ask what to eat with it. A chatbot will answer, and it may invent a producer, a score or a tasting note it never read. Cellar Scanner reads the label, retrieves similar wines from a corpus of professional reviews, and does not say anything the retrieved text fails to support.
+Point a phone at a wine bottle and ask what to eat with it, and a chatbot will answer, possibly with a producer, a score or a tasting note it never read. Cellar Scanner reads the label, retrieves similar wines from a corpus of professional reviews, and says only what the retrieved text supports.
 
-I also used it to practice five things I wanted to show with numbers attached: fine-tuning, guardrails, multimodal input, context engineering and token budgeting.
+It was also practice for five things I wanted to show with numbers attached: fine-tuning, guardrails, multimodal input, context engineering and token budgeting. The part I find most interesting is the blind-tasting model. WSET training (I hold Level 3) teaches you to describe a wine in a fixed vocabulary; this model runs that in reverse, from the description to the grape, and a 1.5B-parameter model turns out to learn some of it on a laptop.
 
 ## No Gemini key
 
-The original design used Gemini's vision API to read the label photo. Two API keys both had zero free-tier quota provisioned, a project-configuration problem rather than a rate limit that would clear. Instead of waiting on a third key I made the vision step local: `tesseract` OCRs the photo, then `claude -p` (my Claude subscription, no per-token API cost) checks that it is a wine label and extracts the structured fields from the OCR text in one call. It still refuses non-wine photos and flags low-confidence reads.
+The original design used Gemini's vision API to read the label photo. Two API keys both had zero free-tier quota provisioned, which was a project-configuration problem; a rate limit would have cleared on its own. I made the vision step local and stopped waiting on a third key: `tesseract` OCRs the photo, then `claude -p` (my Claude subscription, no per-token API cost) checks that it is a wine label and extracts the structured fields from the OCR text in one call. It still refuses non-wine photos and flags low-confidence reads.
 
 ## The retrieval layer
 
-About 30,000 Wine Enthusiast reviews, embedded locally with `sentence-transformers` and indexed in Chroma. The index is a stratified sample across every represented grape. A water-filling allocation hands unused quota from rare varieties to common ones until the 30,000 target is reached. The first version of the ingest script used a flat per-variety quota and undershot the target by two thirds; I caught it by reading the printed count.
+The corpus is about 30,000 Wine Enthusiast reviews, embedded locally with `sentence-transformers` and indexed in Chroma as a stratified sample across every represented grape. A water-filling allocation hands unused quota from rare varieties to common ones until the 30,000 target is reached. The first version of the ingest script used a flat per-variety quota and undershot the target by two thirds; I caught it by reading the printed count.
 
-Each claim in a generated profile or pairing is checked against the retrieved reviews before it reaches the user. Sentences that do not ground are dropped and the answer regenerates without them. Citations are real review ids from the retrieval.
+Each claim in a generated profile or pairing is checked against the retrieved reviews before it reaches the user. Sentences that do not ground are dropped and the answer regenerates without them. Every citation is the id of a review that retrieval returned.
 
 ## The fine-tune
 
-The task: given a tasting note with the grape name masked out, guess the variety. The labels are real Wine Enthusiast varieties, not synthetic ones. The dataset has 41,389 rows across the 40 varieties with at least 500 reviews, capped at 1,200 per variety, split by wine title so no wine's reviews land in both train and test.
+Given a tasting note with the grape name masked out, the model has to guess the variety. The labels come straight from the Wine Enthusiast variety field, and the dataset has 41,389 rows across the 40 varieties with at least 500 reviews, capped at 1,200 per variety, split by wine title so no wine's reviews land in both train and test.
 
-The masking step is measured. Many descriptions name the grape ("this Cabernet shows..."), which would make blind tasting into string matching. Regex-masking the variety name and its common synonyms fired on **20.1%** of rows, so one in five examples would have been trivial without it.
+Many descriptions name the grape ("this Cabernet shows..."), which would turn blind tasting into string matching, so I measured the masking step. Regex-masking the variety name and its common synonyms fired on 20.1% of rows: without it, one example in five would have been trivial.
 
 A Qwen2.5-1.5B-Instruct model (4-bit MLX) was LoRA fine-tuned on the masked notes on my laptop: 800 iterations at batch 4, 12 layers, learning rate 1.5e-4, 3.96M trainable parameters, 4.4 GB peak memory. Validation loss fell from 3.895 to 1.196. It was then benchmarked three ways on the held-out, shuffled test split:
 
@@ -32,7 +32,7 @@ A Qwen2.5-1.5B-Instruct model (4-bit MLX) was LoRA fine-tuned on the masked note
 | **+ LoRA (this project)** | 300 | **27.7%** | 27.7% | **0.253** | 10.6 s | $0 |
 | Claude (teacher, zero-shot) | 200 | 23.0% | **30.5%** | 0.119 | 69.6 s | Claude subscription |
 
-Fine-tuning lifted Top-1 3.2 times over the untrained base model. The LoRA model's Top-1 (27.7%) is ahead of Claude's zero-shot Top-1 (23.0%), at $0 marginal cost, about a seventh of the latency, and with no network call. Base and LoRA were scored on a 300-row subsample and Claude on a separate 200-row one, and at those sizes the 4.7-point gap is about 1.2 standard errors. I read it as the small specialist matching or slightly beating the generalist on the one task it was trained for, not as a decisive win. The macro-F1 gap (0.253 against 0.119) is larger, which means the LoRA model's correct answers are spread across more varieties.
+Fine-tuning lifted Top-1 3.2 times over the untrained base model. The LoRA model's Top-1 (27.7%) is ahead of Claude's zero-shot Top-1 (23.0%), at $0 marginal cost, about a seventh of the latency, and with no network call. Base and LoRA were scored on a 300-row subsample and Claude on a separate 200-row one, and at those sizes the 4.7-point gap is about 1.2 standard errors. I read it as the small specialist matching or slightly beating the generalist on the one task it was trained for, which is a narrower claim than a decisive win. The macro-F1 gap (0.253 against 0.119) is larger, which means the LoRA model's correct answers are spread across more varieties.
 
 Claude leads on Top-3 (30.5% against 27.7%) for a specific reason, covered below: the LoRA model cannot use a second or third guess yet.
 
@@ -42,11 +42,13 @@ The confusion matrix (`eval/confusion_matrix.png`) shows where the fine-tuned mo
   <img src="eval/confusion_matrix.png" alt="Confusion matrix for the twelve most frequent test varieties; the largest off-diagonal cell is Cabernet Sauvignon predicted as Cabernet Franc, ten times" width="600">
 </p>
 
-**The Top-3 limitation.** The fine-tuned model's Top-1 and Top-3 accuracy are identical. The raw generations showed why: the training target was always the single line `"1. {variety}"`, never a three-item ranked list, so the model learned to answer once and stop. It reproduces its training signal correctly; the signal did not teach ranking. A retrain with multi-item targets would close this gap.
+### The Top-3 limitation
+
+The fine-tuned model's Top-1 and Top-3 accuracy are identical. The raw generations showed why: the training target was always the single line `"1. {variety}"`, never a three-item ranked list, so the model learned to answer once and stop. It reproduces its training signal correctly, and that signal never asked for a ranking. A retrain with multi-item targets would close this gap.
 
 ## Context engineering and token budgeting
 
-Every request goes through a token budgeter that reports what made it into the prompt: system rules, the wine card, the top-*k* retrieved reviews (rank-ordered, cut at whole items rather than mid-sentence), and the output format. The app's dev panel shows this breakdown.
+Every request goes through a token budgeter that reports what made it into the prompt: system rules, the wine card, the top-*k* retrieved reviews (rank-ordered, and cut at a whole item so no review ends mid-sentence), and the output format. The app's dev panel shows this breakdown.
 
 Re-scanning the same bottle hits a semantic cache keyed on the extracted card, which returns the earlier answer without a new retrieval and generation round trip. The dev panel shows the hit rate.
 

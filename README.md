@@ -17,7 +17,7 @@ Blind grape identification from a tasting note with the grape name masked, 40 va
 | Claude, zero-shot | 200 | 23.0% | **30.5%** | 0.119 | 69.6 s | Claude subscription |
 
 - LoRA fine-tuning took Top-1 from 8.7% to 27.7%, 3.2 times the base model, and runs on a laptop with no network call.
-- The LoRA model leads Claude zero-shot on Top-1 (27.7% against 23.0%) and macro-F1 (0.253 against 0.119). The two were scored on different subsamples of 300 and 200 rows, and the Top-1 gap is about 1.2 standard errors, so it is a lead and not a clear win.
+- The LoRA model leads Claude zero-shot on Top-1 (27.7% against 23.0%) and macro-F1 (0.253 against 0.119). The two were scored on different subsamples of 300 and 200 rows, and the Top-1 gap is about 1.2 standard errors, so it is a lead that sampling noise could erase.
 - Claude leads on Top-3. The LoRA model's Top-1 and Top-3 are identical because its training target was a single answer (`"1. {variety}"`), so it never fills ranks 2 and 3.
 
 Full numbers, the confusion matrix and the dataset card are in [`eval/`](eval/), produced by [`training/bench_classifier.py`](training/bench_classifier.py).
@@ -26,15 +26,25 @@ Full numbers, the confusion matrix and the dataset card are in [`eval/`](eval/),
 
 ## Method
 
-**Classifier data.** `training/prep_classifier.py` builds 41,389 rows from the 40 varieties with at least 500 reviews, capped at 1,200 per variety, split by wine title so no wine is in both train and test (37,289 train, 2,076 validation, 2,024 test; leakage check passed). A regex masks the variety name and common synonyms in every note. It fired on 20.1% of rows ([`eval/masking_report.json`](eval/masking_report.json)), which would otherwise have turned the task into string matching.
+### Classifier data
 
-**Fine-tune.** LoRA on `mlx-community/Qwen2.5-1.5B-Instruct-4bit` with `mlx_lm.lora` on Apple Silicon: 12 layers, batch 4, 800 iterations, learning rate 1.5e-4, sequence length 768. 3.96M trainable parameters (0.256%), 4.4 GB peak memory. Validation loss went from 3.895 to 1.196 ([`training/train_run.log`](training/train_run.log), [`eval/loss_curve.png`](eval/loss_curve.png)).
+`training/prep_classifier.py` builds 41,389 rows from the 40 varieties with at least 500 reviews, capped at 1,200 per variety, split by wine title so no wine is in both train and test (37,289 train, 2,076 validation, 2,024 test; leakage check passed). A regex masks the variety name and common synonyms in every note. It fired on 20.1% of rows ([`eval/masking_report.json`](eval/masking_report.json)), which would otherwise have turned the task into string matching.
 
-**Benchmark.** Base and LoRA run on a seeded 300-row subsample of the test split (`mlx_lm.generate` reloads the model per call, so the full set would take hours); Claude runs on a separate 200-row subsample. Answers are matched against the class vocabulary. Metrics: Top-1, Top-3, macro-F1, latency.
+### Fine-tune
 
-**Scanner.** `tesseract` OCRs the label locally. One `claude -p` call checks the photo is a wine label and extracts a structured card (producer, wine, vintage, grape, region, country, confidence). The card queries a Chroma index of 30,000 reviews, embedded with sentence-transformers and stratified across varieties by water-filling. A second call writes the profile and pairings, and a token budgeter records what went into the prompt.
+LoRA on `mlx-community/Qwen2.5-1.5B-Instruct-4bit` with `mlx_lm.lora` on Apple Silicon: 12 layers, batch 4, 800 iterations, learning rate 1.5e-4, sequence length 768. 3.96M trainable parameters (0.256%), 4.4 GB peak memory. Validation loss went from 3.895 to 1.196 ([`training/train_run.log`](training/train_run.log), [`eval/loss_curve.png`](eval/loss_curve.png)).
 
-**Guardrails.** A domain gate refuses non-wine photos. Vintage is range-checked and the grape is validated against the winemag vocabulary. Each profile sentence and pairing reason must match a retrieved review, or it is dropped and the answer regenerates; citations are real review ids. A low-confidence read asks for a retake. A semantic cache answers repeat scans, with the hit rate in the dev panel.
+### Benchmark
+
+Base and LoRA run on a seeded 300-row subsample of the test split (`mlx_lm.generate` reloads the model per call, so the full set would take hours); Claude runs on a separate 200-row subsample. Answers are matched against the class vocabulary. Metrics: Top-1, Top-3, macro-F1, latency.
+
+### Scanner
+
+`tesseract` OCRs the label locally. One `claude -p` call checks the photo is a wine label and extracts a structured card (producer, wine, vintage, grape, region, country, confidence). The card queries a Chroma index of 30,000 reviews, embedded with sentence-transformers and stratified across varieties by water-filling. A second call writes the profile and pairings, and a token budgeter records what went into the prompt.
+
+### Guardrails
+
+A domain gate refuses non-wine photos. Vintage is range-checked and the grape is validated against the winemag vocabulary. Each profile sentence and pairing reason must match a retrieved review, or it is dropped and the answer regenerates, and every citation is the id of a retrieved review. A low-confidence read asks for a retake. A semantic cache answers repeat scans, with the hit rate in the dev panel.
 
 Stack: Python, MLX / mlx-lm, Qwen2.5-1.5B, LoRA, sentence-transformers, Chroma, tesseract, Claude CLI, Gradio, faster-whisper (speech input), edge-tts (read-back), pydantic.
 

@@ -343,8 +343,8 @@
     <p style="margin-top:22px">
       The LoRA model is ahead of Claude on Top-1 by 4.7 points, but the two
       were scored on different subsamples of 300 and 200 rows, and at those
-      sizes the gap is about 1.2 standard errors. It is a lead, not a clear
-      win. The macro-F1 gap (0.253 against 0.119) is wider, which says the LoRA
+      sizes the gap is about 1.2 standard errors. It is a lead that
+      sampling noise could erase. The macro-F1 gap (0.253 against 0.119) is wider, which says the LoRA
       model's hits are spread across more varieties. Claude is ahead on Top-3
       (30.5% against 27.7%).
     </p>
@@ -453,10 +453,10 @@
       went into that prompt.
     </p>
     <ol class="guards">
-      <li><b>Domain gate</b><span>A photo that is not a wine label gets a refusal, not a made-up card.</span></li>
+      <li><b>Domain gate</b><span>A photo that is not a wine label gets a refusal, and no card is made up for it.</span></li>
       <li><b>Field validation</b><span>Vintage is range-checked; the grape is validated against the winemag vocabulary.</span></li>
-      <li><b>Claim grounding</b><span>Each sentence of the profile and each pairing reason must match a retrieved review; the rest are dropped and the answer regenerates. Citations are real review ids.</span></li>
-      <li><b>Confidence gate</b><span>A low-confidence read asks for a retake instead of guessing.</span></li>
+      <li><b>Claim grounding</b><span>Each sentence of the profile and each pairing reason must match a retrieved review; the rest are dropped and the answer regenerates. Every citation is the id of a retrieved review.</span></li>
+      <li><b>Confidence gate</b><span>A low-confidence read asks for a retake.</span></li>
       <li><b>Semantic cache</b><span>Re-scanning the same bottle returns the cached answer; the hit rate shows in the dev panel.</span></li>
     </ol>
     <figure>
@@ -497,7 +497,7 @@
       <div class="spec"><dt>Generation</dt><dd><code>claude -p</code> on a Claude subscription, so no per-token cost</dd></div>
       <div class="spec"><dt>App</dt><dd>Gradio (<code>app.py</code>): Scan and Blind Taste Mode</dd></div>
       <div class="spec"><dt>Benchmark</dt><dd><code>training/bench_classifier.py</code>; results in <code>eval/</code></dd></div>
-      <div class="spec"><dt>Related</dt><dd>The same review corpus is analysed in <a href="https://lyhjeremy.github.io/wine-score-inflation/">Wine Score Inflation</a> and searched in <a href="https://lyhjeremy.github.io/wine-sommelier-rag/">Wine Sommelier RAG</a></dd></div>
+      <div class="spec"><dt>Related</dt><dd>The same review corpus is analyzed in <a href="https://lyhjeremy.github.io/wine-score-inflation/">Wine Score Inflation</a> and searched in <a href="https://lyhjeremy.github.io/wine-sommelier-rag/">Wine Sommelier RAG</a></dd></div>
     </dl>
   </section>
 
