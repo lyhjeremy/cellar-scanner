@@ -55,8 +55,12 @@ Stack: Python, MLX / mlx-lm, Qwen2.5-1.5B, LoRA, sentence-transformers, Chroma, 
 ## How to run
 
 ```bash
+git clone https://github.com/lyhjeremy/cellar-scanner && cd cellar-scanner
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ./setup_ocr.sh                      # tesseract + language packs (one-time, uses Homebrew)
+mkdir -p data && curl -L -o data/winemag-data-130k-v2.csv \
+    https://raw.githubusercontent.com/viannaandreBR/My-Data-Science-Journey/master/18-Kaggle/_DataSets/winemag-data-130k-v2.csv
 python scripts/ingest.py            # builds the 30k-review index
 python training/prep_classifier.py  # builds the masked classifier dataset
 bash training/lora_harness/train.sh mlx-community/Qwen2.5-1.5B-Instruct-4bit \
@@ -64,7 +68,7 @@ bash training/lora_harness/train.sh mlx-community/Qwen2.5-1.5B-Instruct-4bit \
 python app.py                       # Gradio app: Scan a label, Blind Taste Mode
 ```
 
-Generation uses `claude -p` and your Claude subscription. `.env.example` lists the optional overrides, including a `GEMINI_API_KEY` fallback and `ANTHROPIC_API_KEY` for when neither the CLI nor Gemini is available. MLX training and the LoRA model need Apple Silicon. There is no hosted demo.
+Generation uses `claude -p` and your Claude subscription. `.env.example` lists the optional overrides, including a `GEMINI_API_KEY` fallback and `ANTHROPIC_API_KEY` for when neither the CLI nor Gemini is available. MLX training and the LoRA model need Apple Silicon. The review CSV (53 MB, the Wine Enthusiast 130k set) is git-ignored. There is no hosted demo.
 
 ## Repo layout
 

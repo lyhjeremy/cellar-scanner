@@ -20,7 +20,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "training" / "lo
 
 from prep import prep_dataset
 
-CSV_PATH = Path(__file__).resolve().parent.parent.parent.parent / "Project 21 Wine Sommelier RAG" / "wine-sommelier-rag" / "data" / "winemag-data-130k-v2.csv"
+# The review CSV lives in data/ (see the README for the download). The sibling
+# wine-sommelier-rag checkout is used instead when it exists, as in the original build.
+_SIBLING_CSV = Path(__file__).resolve().parent.parent.parent.parent / "Project 21 Wine Sommelier RAG" / "wine-sommelier-rag" / "data" / "winemag-data-130k-v2.csv"
+CSV_PATH = _SIBLING_CSV if _SIBLING_CSV.exists() else Path(__file__).resolve().parent.parent / "data" / "winemag-data-130k-v2.csv"
 OUT_DIR = Path(__file__).resolve().parent.parent / "data" / "lora"
 EVAL_DIR = Path(__file__).resolve().parent.parent / "eval"
 
