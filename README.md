@@ -1,5 +1,7 @@
 # Cellar Scanner
 
+[![tests](https://github.com/lyhjeremy/cellar-scanner/actions/workflows/tests.yml/badge.svg)](https://github.com/lyhjeremy/cellar-scanner/actions/workflows/tests.yml)
+
 Photograph a wine label and get a profile and food pairings grounded in 30,000 Wine Enthusiast reviews, plus a locally fine-tuned LoRA model that guesses the grape from a blind tasting note.
 
 [Live site](https://lyhjeremy.github.io/cellar-scanner/) · [Write-up](https://lyhjeremy.github.io/cellar-scanner/overview/) · [Technical notes](writeup.md)
