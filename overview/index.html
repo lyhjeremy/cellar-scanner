@@ -308,6 +308,17 @@
   .zoom:hover { background: var(--ink); color: var(--paper); }
   .zoom[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
   .hover { font-family: var(--sans); font-size: 14.5px; color: var(--ink2); min-height: 1.5em; margin: 6px 0 0; }
+  /* At a glance, set like a tasting card */
+  .glance { margin: 34px auto 0; max-width: 46rem; text-align: left; border: 1px solid var(--edge); background: var(--card); padding: 18px 24px 8px; }
+  .glance h2 { padding: 0; text-align: left; max-width: none; }
+  .glance dt { padding-top: 1px; }
+  .glance h2 { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 22px; margin: 0 0 6px; color: var(--ink2); }
+  .glance dl { margin: 0; }
+  .glance dl > div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 2px 16px; padding: 10px 0; border-top: 1px dotted var(--edge); }
+  .glance dt { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 18px; color: var(--ink); }
+  .glance dd { margin: 0; font-family: var(--sans); font-size: 15.5px; line-height: 1.5; color: var(--ink2); }
+  .glance dd b { color: var(--ink); }
+  @media (max-width: 560px) { .glance { padding: 14px 14px 6px; } .glance dl > div { grid-template-columns: 1fr; } }
 </style>
 
 
@@ -358,6 +369,19 @@
            scoring.</p>
       </div>
     </div>
+
+    <section class="glance" aria-labelledby="glance-h">
+      <h2 id="glance-h">At a glance</h2>
+      <dl>
+        <div><dt>Task</dt><dd>Name the grape, one of 40 varieties, from a tasting note with the grape's name masked</dd></div>
+        <div><dt>Eval set</dt><dd>The first 300 notes of a 2,024-note held-out split, split by wine with a leakage check and shuffled with a fixed seed; Claude ran on the first 200 of them</dd></div>
+        <div><dt>Baseline</dt><dd>Claude zero-shot <b>23.0%</b> Top-1; the untuned base model 8.7%</dd></div>
+        <div><dt>Result</dt><dd>LoRA <b>27.7%</b> Top-1, macro-F1 0.253. On the 200 notes both saw the lead is within noise (sign test p = 0.33)</dd></div>
+        <div><dt>Cost per note</dt><dd>$0 per call on the laptop; Claude ran on a Max subscription and its per-call cost was not recorded</dd></div>
+        <div><dt>Latency</dt><dd>LoRA <b>4.0 s</b> median, 4.8 s p95 (n = 300, model reloaded every call); Claude <b>13.5 s</b> median, 40.4 s p95 (n = 200). A few slow calls pull the means to 10.6 s and 69.6 s</dd></div>
+        <div><dt>Main failure</dt><dd>It falls back on a few default answers: of the 75 errors in its 15 most common confusions, 72 answer Viognier (36), Cabernet Franc (22) or Sangiovese (14)</dd></div>
+      </dl>
+    </section>
   </section>
 </div>
 
