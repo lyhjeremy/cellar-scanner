@@ -16,11 +16,13 @@ Blind grape identification from a tasting note with the grape name masked, 40 va
 |---|---|---|---|---|---|---|
 | Base Qwen2.5-1.5B (no fine-tune) | 300 | 8.7% | 14.3% | 0.021 | 4.3 s | $0 |
 | **+ LoRA (this project)** | 300 | **27.7%** | 27.7% | **0.253** | 10.6 s | $0 |
-| Claude, zero-shot | 200 | 23.0% | **30.5%** | 0.119 | 69.6 s | Claude subscription |
+| Claude, zero-shot | 200 | 23.0% | **30.5%** | 0.119 | 69.6 s | $53.64 API-equivalent |
 
 - LoRA fine-tuning took Top-1 from 8.7% to 27.7%, 3.2 times the base model, and runs on a laptop with no network call.
 - The LoRA model leads Claude zero-shot on Top-1 (27.7% against 23.0%) and macro-F1 (0.253 against 0.119). Claude's 200 test notes are the first 200 of the LoRA model's 300, so the two can be compared note by note: on those 200 the LoRA model is right on 55 and Claude on 46, and of the 67 notes only one of them got right the split is 38 to 29 (exact sign test p = 0.33). It is a lead that sampling noise could erase.
 - Claude leads on Top-3. The LoRA model's Top-1 and Top-3 are identical because its training target was a single answer (`"1. {variety}"`), so it never fills ranks 2 and 3.
+
+Claude's cost per 1,000 notes is the API-equivalent `total_cost_usd` that `claude -p --output-format json` reports, measured on 2026-11-05 by rerunning the first 25 notes of its subsample with the benchmark's own prompt and flags: $0.054 a note on Sonnet 5.5, mostly the CLI's own context of about 13,500 cached tokens per call. The CLI runs on a Claude subscription, so nothing was billed. Script and per-call rows: [`eval/claude_cost/`](eval/claude_cost/).
 
 Full numbers, the confusion matrix and the dataset card are in [`eval/`](eval/), produced by [`training/bench_classifier.py`](training/bench_classifier.py).
 

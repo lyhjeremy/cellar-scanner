@@ -377,7 +377,7 @@
         <div><dt>Eval set</dt><dd>The first 300 notes of a 2,024-note held-out split, split by wine with a leakage check and shuffled with a fixed seed; Claude ran on the first 200 of them</dd></div>
         <div><dt>Baseline</dt><dd>Claude zero-shot <b>23.0%</b> Top-1; the untuned base model 8.7%</dd></div>
         <div><dt>Result</dt><dd>LoRA <b>27.7%</b> Top-1, macro-F1 0.253. On the 200 notes both saw the lead is within noise (sign test p = 0.33)</dd></div>
-        <div><dt>Cost per note</dt><dd>$0 per call on the laptop; Claude ran on a Max subscription and its per-call cost was not recorded</dd></div>
+        <div><dt>Cost per note</dt><dd>$0 per call on the laptop; Claude <b>$0.054</b> API-equivalent ($53.64 per 1,000), from 25 notes rerun on 2026-11-05 with the benchmark's prompt and CLI flags (<code>eval/claude_cost/</code>). Most of it is the Claude CLI's own context, about 13,500 tokens written to cache per call</dd></div>
         <div><dt>Latency</dt><dd>LoRA <b>4.0 s</b> median, 4.8 s p95 (n = 300, model reloaded every call); Claude <b>13.5 s</b> median, 40.4 s p95 (n = 200). A few slow calls pull the means to 10.6 s and 69.6 s</dd></div>
         <div><dt>Main failure</dt><dd>It falls back on a few default answers: of the 75 errors in its 15 most common confusions, 72 answer Viognier (36), Cabernet Franc (22) or Sangiovese (14)</dd></div>
       </dl>
